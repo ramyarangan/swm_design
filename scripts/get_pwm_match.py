@@ -40,8 +40,9 @@ class MatchParams:
 		idx_lines = f.readlines()
 		f.close()
 
-		self.full_seq = idx_lines[0]
-		self.idx_matching = IdxMatchings(idx_lines[1:])		
+		self.name = idx_lines[0]
+		self.full_seq = idx_lines[1]
+		self.idx_matching = IdxMatchings(idx_lines[2:])		
 
 ## Set of SWM designed sequences and their corresponding scores, and
 ## a matched length set of control sequences
@@ -175,6 +176,7 @@ class PWM:
 ## Includes plotting utilities for displaying SWM / control scores
 class SWMControlPWMScore:
 	def __init__(self, swm_control_seqs_scores, pwm, match_params):
+		self.name = match_params.name
 		self.idxs = match_params.idx_matching.full_idxs
 		self.pwm = pwm
 		self.swm_pwm_scores = self.get_pwm_scores(swm_control_seqs_scores.swm_seqs)
@@ -191,6 +193,7 @@ class SWMControlPWMScore:
 		plt.legend(loc='upper left')
 		plt.axvline(np.mean(swm_scores), color='blue', linestyle='dashed')
 		plt.axvline(np.mean(control_scores), color='forestgreen', linestyle='dashed')
+		plt.title(self.name)
 		plt.show()
 
 	## Plot median score difference between SWM and control sequences as they vary by
@@ -205,6 +208,7 @@ class SWMControlPWMScore:
 		plt.scatter(score_cutoff_range, diff_medians, color='black')
 		plt.xlabel("% Top-scoring structures")
 		plt.ylabel("Median SWM - control PWM score")
+		plt.title(self.name)
 		plt.show()
 
 	## Plot median score of SWM sequences as they vary by SWM designed 
@@ -218,6 +222,7 @@ class SWMControlPWMScore:
 		plt.scatter(score_cutoff_range, medians, color='black')
 		plt.xlabel("% Top-scoring structures")
 		plt.ylabel("Median SWM PWM score")
+		plt.title(self.name)
 		plt.show()
 
 	## Get PWM scores for a set of sequences

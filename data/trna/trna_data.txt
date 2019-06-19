@@ -1,3 +1,4 @@
+tRNA tloop
 gcggauuuagcucaguugggagagcgccagacugaagaucuggagguccuguguucgauccacagaauucgcacca
 6,18,21
 7,19,22
