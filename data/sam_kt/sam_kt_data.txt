@@ -1,0 +1,11 @@
+SAM I KT
+ggcuuaucaagagaggugaagggacuggcccgacgaaacccggcaaccagaaauggugccaauuccugcagcggaaacguugaaagaugagccga
+5,17,20
+6,18,21
+7,19,39
+12,31,54
+13,32,55
+14,33,58
+15,34,59
+16,35,60
+17,36,61
