@@ -20,7 +20,7 @@ class IdxMatchings:
 		self.full_idxs = []
 		self.align_idxs = []
 
-		for idx_line in idx_lines[1:]:
+		for idx_line in idx_lines:
 			idx_items = [int(x) for x in idx_line.split(',')]
 			self.idx_matchings += [idx_items]
 			self.swm_idxs += [idx_items[0]]
@@ -64,7 +64,11 @@ class SWMControlSeqsScores:
 		new_seq = ""
 		i = 0
 		while i < len(seq):
-			if seq[i] != 'X':
+			# If the sequence has three letter codes, use the canonical
+			# equivalent. Otherwise, use X.
+			if seq[i] != 'X' or \
+				(i + 1 == len(seq) - 1) or \
+				((seq[i] == 'X') and (seq[i + 1] != '[')):
 				new_seq += seq[i]
 				i += 1
 			else:
@@ -136,7 +140,7 @@ class Alignment:
 
 ## Stores a PWM and computes match to it
 class PWM:
-	nt_idxs = {"A": 0, "U": 1, "C": 2, "G": 3}
+	nt_idxs = {"A": 0, "U": 1, "C": 2, "G": 3, "X": 1}
 	
 	def __init__(self, seqs, idxs):
 		self.pwm_probs = self.get_pwm(seqs, idxs)
@@ -280,5 +284,5 @@ alignment = Alignment(alignment_filename)
 pwm = PWM(alignment.alignment_lines, match_params.idx_matching.align_idxs)
 swm_control_pwm_score = SWMControlPWMScore(swm_control_seqs_scores, pwm, match_params)
 swm_control_pwm_score.compare_pwms()
-#swm_control_pwm_score.plot_hist_scores()
-#swm_control_pwm_score.plot_median_score_diff()
+swm_control_pwm_score.plot_hist_scores()
+swm_control_pwm_score.plot_median_score_diff()
