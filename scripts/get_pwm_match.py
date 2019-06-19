@@ -1,8 +1,10 @@
 import sys
 import random
 import numpy as np 
+from numpy import linalg as LA
 import matplotlib.pyplot as plt
 import pandas as pd 
+import logomaker
 
 idx_filename = sys.argv[1]
 score_filename = sys.argv[2]
@@ -136,21 +138,23 @@ class Alignment:
 class PWM:
 	nt_idxs = {"A": 0, "U": 1, "C": 2, "G": 3}
 	
-	def __init__(self, alignment, match_params):
-		align_idxs = match_params.idx_matching.align_idxs
-		self.pwm = self.get_pwm(alignment, align_idxs)
+	def __init__(self, seqs, idxs):
+		self.pwm_probs = self.get_pwm(seqs, idxs)
+		self.pwm = np.log(self.pwm_probs/0.25)
 		self.size = self.pwm.shape[1]
 		self.pwm_df = pd.DataFrame(data=self.pwm.T)
 		self.pwm_df.columns = ["A", "U", "C", "G"]
+		self.pwm_probs_df = pd.DataFrame(data=self.pwm_probs.T)
+		self.pwm_probs_df.columns = ["A", "U", "C", "G"]
 
-	def get_pwm(self, alignment, align_idxs):
+	def get_pwm(self, seqs, idxs):
 		# Add in pseudocounts to prevent -inf in PWM
-		counts = np.array([1] * len(align_idxs) * 4) 
-		counts.resize((4, len(align_idxs)))
+		counts = np.array([1] * len(idxs) * 4) 
+		counts.resize((4, len(idxs)))
 
-		for alignment_line in alignment.alignment_lines:
-			for ii, idx in enumerate(align_idxs):
-				new_char = alignment_line[idx]
+		for seq in seqs:
+			for ii, idx in enumerate(idxs):
+				new_char = seq[idx]
 				if new_char == "-":
 					continue
 				new_char = new_char.upper()
@@ -159,8 +163,6 @@ class PWM:
 		counts = counts.T
 		counts = counts/counts.sum(axis=1, keepdims=True)
 		counts = counts.T
-		counts = np.log(counts/0.25)
-
 		return counts
 
 	def score_pwm_match(self, seq, idxs):
@@ -172,6 +174,19 @@ class PWM:
 			align_score += self.pwm[self.nt_idxs[new_char], jj]
 		return align_score
 
+	## Draw PWM using logomaker
+	def draw_pwm(self):
+		color_scheme = {'G': [1, 0, 0],
+					    'TU': [0, 0, 1],
+					    'C': [0, .5, 0],
+					    'A': [1, .65, 0]}
+		logomaker.Logo(self.pwm_probs_df, color_scheme=color_scheme)
+		plt.show()
+
+	## 2 norm of difference between this PWM and another one
+	def compare_pwms(self, pwm):
+		return LA.norm(self.pwm_probs - pwm.pwm_probs)
+
 ## Computes and stores scores for SWM and control sequences, scored against a PWM
 ## Includes plotting utilities for displaying SWM / control scores
 class SWMControlPWMScore:
@@ -179,8 +194,10 @@ class SWMControlPWMScore:
 		self.name = match_params.name
 		self.idxs = match_params.idx_matching.full_idxs
 		self.pwm = pwm
-		self.swm_pwm_scores = self.get_pwm_scores(swm_control_seqs_scores.swm_seqs)
-		self.control_pwm_scores = self.get_pwm_scores(swm_control_seqs_scores.control_seqs)
+		self.swm_seqs = swm_control_seqs_scores.swm_seqs
+		self.control_seqs = swm_control_seqs_scores.control_seqs
+		self.swm_pwm_scores = self.get_pwm_scores(self.swm_seqs)
+		self.control_pwm_scores = self.get_pwm_scores(self.control_seqs)
 		self.scores = np.array(swm_control_seqs_scores.scores)
 
 	## Plot histogram of SWM and Control sequence matches to PWM
@@ -245,12 +262,23 @@ class SWMControlPWMScore:
 
 		return pwm_scores
 
+	def compare_pwms(self):
+		swm_pwm = PWM(self.swm_seqs, self.idxs)
+		control_pwm = PWM(self.control_seqs, self.idxs)
+		self.pwm.draw_pwm()
+		swm_pwm.draw_pwm()
+		print(self.pwm.pwm_df)
+		print(swm_pwm.pwm_df)
+		print(control_pwm.pwm_df)
+		print(self.pwm.compare_pwms(swm_pwm))
+		print(self.pwm.compare_pwms(control_pwm))
+
 
 match_params = MatchParams(idx_filename)
 swm_control_seqs_scores = SWMControlSeqsScores(score_filename, match_params)
 alignment = Alignment(alignment_filename)
-pwm = PWM(alignment, match_params)
-print(pwm.pwm_df)
+pwm = PWM(alignment.alignment_lines, match_params.idx_matching.align_idxs)
 swm_control_pwm_score = SWMControlPWMScore(swm_control_seqs_scores, pwm, match_params)
-swm_control_pwm_score.plot_hist_scores()
-swm_control_pwm_score.plot_median_score_diff()
+swm_control_pwm_score.compare_pwms()
+#swm_control_pwm_score.plot_hist_scores()
+#swm_control_pwm_score.plot_median_score_diff()
